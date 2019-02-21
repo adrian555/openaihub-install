@@ -1,0 +1,43 @@
+#
+# Make sure temp directories used by install is always available
+#
+
+- name: create install dir
+  file: path="{{ install_dir }}" state=directory
+
+- name: create temporary install dir
+  file: path="{{ install_temp_dir }}" state=directory
+
+#
+# Based on documentation from https://zero-to-jupyterhub.readthedocs.io/en/latest/
+#
+- name: Add JupyterHub Helm chart repository
+  shell: |
+    helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/
+    helm repo update
+
+# Add the below step if you want to clean up the jupyter namespace 
+# - name: Remove previous installation of JupyterHub
+#   shell: |
+#     kubectl delete namespace {{ jupyterhub.namespace }}
+#   ignore_errors: yes
+
+- name: Create JupyterHub helm chart configuration
+  template:
+    src: jupyterhub-config.yaml.j2
+    dest: "{{ install_temp_dir }}/jupyterhub-config.yaml"
+    mode: 0644
+
+- name: Install JupyterHub
+  shell: |
+    helm upgrade --install --force hub jupyterhub/jupyterhub --namespace {{ jupyterhub.namespace }} --version {{ jupyterhub.helm_version }} --values {{ install_temp_dir }}/jupyterhub-config.yaml
+
+- name: Create JupyterHub NSF service descriptor
+  template:
+    src: nfs-deployment-icp.yaml.j2
+    dest: "{{ install_temp_dir }}/nfs-deployment-icp.yaml"
+    mode: 0644
+
+- name: Create NFS provisioner
+  shell: |
+    kubectl apply -f {{ install_temp_dir }}/nfs-deployment-icp.yaml

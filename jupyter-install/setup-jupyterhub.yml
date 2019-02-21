@@ -1,0 +1,6 @@
+- name: setup kubernetes jupyter hub with enterprise gateway
+  hosts: localhost
+  remote_user: root
+  roles:
+    - role: jupyter-enterprise-gateway
+    - role: jupyterhub

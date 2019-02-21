@@ -1,0 +1,55 @@
+hub:
+#  baseUrl: hub
+  db:
+    type: sqlite-memory
+  extraConfig: |-
+    from kubespawner import KubeSpawner
+    from tornado import gen
+    import yaml
+
+    class CustomKubeSpawner(KubeSpawner):
+        def get_env(self):
+            env = super().get_env()
+
+            env['KG_HTTP_USER'] =  self.user.name
+            env['KERNEL_USERNAME'] =  self.user.name
+            env['KERNEL_NAMESPACE'] =  "{{ groups['gateway_namespace'][0] }}"
+            env['KERNEL_SERVICE_ACCOUNT_NAME'] =  "{{ groups['kernel_sa_name'][0] }}"
+            env['EG_SHARED_NAMESPACE'] = "True"
+
+            return env
+    c.JupyterHub.spawner_class = CustomKubeSpawner
+    config = '/etc/jupyter/jupyter_notebook_config.py'
+    c.Spawner.cmd = ['jupyter-labhub']
+proxy:
+  secretToken: "1be7550452613d3f1e95c687598c8e4a95e64fbc9efcba374fed187fc254c53f"
+
+auth:
+  admin:
+    users:
+      - root
+      - jovyan
+
+ingress:
+  enabled: false
+  hosts:
+    - {{ groups['ingress'][0] }}
+
+singleuser:
+  defaultUrl: "/lab"
+  image:
+    name: elyra/nb2kg
+    tag: 2.0.0.b1
+  storage:
+    dynamic:
+      storageClass: nfs-dynamic
+    capacity: 2Gi
+  extraEnv:
+    KG_URL: http://{{ groups['ingress'][0] }}
+    KG_REQUEST_TIMEOUT: 60
+
+rbac:
+  enabled: true
+
+debug:
+  enabled: true

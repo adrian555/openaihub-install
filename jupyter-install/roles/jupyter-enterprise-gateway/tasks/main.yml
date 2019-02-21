@@ -1,0 +1,49 @@
+#
+# Make sure temp directories used by install is always available
+#
+
+- name: create install dir
+  file: path="{{ install_dir }}" state=directory
+
+- name: create temporary install dir
+  file: path="{{ install_temp_dir }}" state=directory
+
+#
+# Deploys Jupyter Enterprise Gateway and download kernel images
+#
+
+- name: Remove enterprise-gateway namespace
+  shell: |
+    kubectl delete --force namespace enterprise-gateway
+  ignore_errors: yes
+
+# - name: download enterprise gateway and kernel images
+#   shell: |
+#     docker pull elyra/enterprise-gateway:{{ jupyter_enterprise_gateway.image_tag }}
+#     docker pull elyra/kernel-py:{{ jupyter_enterprise_gateway.image_tag }}
+#     docker pull elyra/kernel-tf-py:{{ jupyter_enterprise_gateway.image_tag }}
+#     docker pull elyra/kernel-tf-gpu-py:{{ jupyter_enterprise_gateway.image_tag }}
+#     docker pull elyra/kernel-r:{{ jupyter_enterprise_gateway.image_tag }}
+#     docker pull elyra/kernel-scala:{{ jupyter_enterprise_gateway.image_tag }}
+
+- name: download enterprise gateway yaml file, replace image tag and deploy enterprise-gateway
+  block:
+    - get_url:
+        url: https://raw.githubusercontent.com/jupyter-incubator/enterprise_gateway/{{ jupyter_enterprise_gateway.version }}/etc/kubernetes/enterprise-gateway.yaml
+        dest: "{{ install_temp_dir }}/enterprise-gateway.yaml"
+    - replace:
+        path: "{{ install_temp_dir }}/enterprise-gateway.yaml"
+        regexp: ':VERSION'
+        replace: ':{{ jupyter_enterprise_gateway.image_tag }}'
+    - shell: |
+        kubectl apply -f "{{ install_temp_dir }}/enterprise-gateway.yaml"
+
+- name: Ingress configuration for Enterprise Gateway
+  template:
+    src: enterprise-gateway-ingress.yaml.j2
+    dest: "{{ install_temp_dir }}/enterprise-gateway-ingress.yaml"
+    mode: 0644
+
+- name: Apply ingress configuration for Enterprise Gateway
+  shell: |
+     kubectl apply -f {{ install_temp_dir }}/enterprise-gateway-ingress.yaml

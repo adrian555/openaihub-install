@@ -1,0 +1,14 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  namespace: enterprise-gateway
+  name: enterprise-gateway-ingress
+spec:
+  rules:
+  - host: {{ groups['ingress'][0] }}
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: enterprise-gateway
+          servicePort: 8888

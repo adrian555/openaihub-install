@@ -1,0 +1,10 @@
+[all:vars]
+
+[ingress]
+tommy-kubeflow.us-south.containers.appdomain.cloud
+
+[kernel_namespace]
+kubeflow
+
+[kernel_sa_name]
+pipeline-runner

@@ -1,7 +1,7 @@
 # OpenAIHub Stack Setup
 Installation scripts for installing the Open AI Hub components on Kubernetes
 
-## Istall
+## Install
 1. [FfDL](#1-quick-start)
 2. [KF Pipeline](#2-test)
 3. [Knative](#3-monitoring)
